@@ -336,7 +336,7 @@ interface SandstormApi(AppObjectId) {
   #   failure.
 }
 
-interface UiView {
+interface UiView @0xdbb4d798ea67e2e7 {
   # Implements a user interface with which a user can interact with the grain.  We call this a
   # "view" because a single grain may actually have multiple "views" that provide different
   # functionality or represent multiple logical objects in the same physical grain.
@@ -401,6 +401,14 @@ interface UiView {
     # two UiViews are really the same view with different permissions applied, and can then combine
     # them in the UI as appropriate.
     #
+    # Implementation-wise, in addition to the permissions enumerated here, there is an additional
+    # "is human" pseudopermission provided by the Sandstorm platform, which is invisible to apps,
+    # but affects how UiView capabilities may be used.  In particular, all users are said to possess
+    # the "is human" pseudopermission, whereas all other ApiTokenOwners do not, and by default, the
+    # privilege is not passed on.  All method calls on UiView require that the caller have the "is
+    # human" permission.  In practical terms, this means that grains can pass around UiView
+    # capabilities, but only users can actually use them to open sessions.
+    #
     # It is actually entirely possible to implement a traditional filtering membrane around a
     # UiView, perhaps to implement a kind of access that can't be expressed using the permission
     # bits defined by the app.  But doing so will be awkward, slow, and confusing for all the
@@ -439,12 +447,13 @@ interface UiView {
 
     matchOffers @4 :List(PowerboxDescriptor);
     # Indicates what kinds of powerbox offers this grain is interested in accepting. If the grain
-    # is chones by the user during a powerbox offer, then `newOfferSession()` will be called
+    # is chosen by the user during a powerbox offer, then `newOfferSession()` will be called
     # to start a session around this.
   }
 
   newSession @1 (userInfo :UserInfo, context :SessionContext,
-                 sessionType :UInt64, sessionParams :AnyPointer)
+                 sessionType :UInt64, sessionParams :AnyPointer,
+                 tabId :Data)
              -> (session :UiSession);
   # Start a new user interface session.  This happens when a user first opens the view, or when
   # the user returns to a tab that has been inactive long enough that the server was killed off in
@@ -462,10 +471,23 @@ interface UiView {
   # `sessionParams` is a struct whose type is specified by the session type.  By convention, this
   # struct should be defined nested in the session interface type with name "Params", e.g.
   # `WebSession.Params`.  This struct contains some arbitrary startup information.
+  #
+  # `tabId` is a stable identifier for the "tab" (as in, Sandstorm sidebar tab) in which the grain
+  # is being displayed. A single tab may span multiple UiSessions, for instance if the user
+  # suspends their laptop and then restores later, or if the grain crashes. More importantly,
+  # `tabId` allows multiple grains being composed in the same tab to coordinate. For example, when
+  # a grain is embedded in the powerbox UI to respond to a request, it sees the same `tabId` as
+  # the requesting grain. Similarly, when a grain embeds other grains within iframes within its
+  # own UI, they will all see the same `tabId`. One particular case where `tabId` is useful is
+  # in implementing an `EmailVerifier` that cannot be MITM'd. NOTE: `tabId` should NOT be presumed
+  # to be a secret, although no two tabs in all of time will have the same `tabId`.
+  #
+  # For API requests, `tabId` uniquely identifies the token, as so can be used to correlate
+  # multiple requests from the same client.
 
   newRequestSession @2 (userInfo :UserInfo, context :SessionContext,
                         sessionType :UInt64, sessionParams :AnyPointer,
-                        requestInfo :List(PowerboxDescriptor))
+                        requestInfo :List(PowerboxDescriptor), tabId :Data)
                     -> (session :UiSession);
   # Creates a new session based on a powerbox request. `requestInfo` is the subset of the original
   # request description which matched descriptors that this grain indicated it provides via
@@ -476,10 +498,13 @@ interface UiView {
   # disconnected randomly and the front-end will then reconnect by calling `newRequestSession()`
   # again with the same parameters. Generally, apps should avoid storing any session-related state
   # on the server side; it's easy to use client-side sessionStorage instead.
+  #
+  # The `tabId` passed here identifies the requesting tab; see docs under `newSession()`.
 
   newOfferSession @3 (userInfo :UserInfo, context :SessionContext,
                       sessionType :UInt64, sessionParams :AnyPointer,
-                      offer :Capability, descriptor :PowerboxDescriptor)
+                      offer :Capability, descriptor :PowerboxDescriptor,
+                      tabId :Data)
                   -> (session :UiSession);
   # Creates a new session based on a powerbox offer. `offer` is the capability being offered and
   # `descriptor` describes it.
@@ -501,6 +526,8 @@ interface UiView {
   # on the server side; it's easy to use client-side sessionStorage instead. (Of course, if the
   # session calls `SessionContext.openView()`, the new view will be opened as a regular session,
   # not an offer session.)
+  #
+  # The `tabId` passed here identifies the offering tab; see docs under `newSession()`.
 }
 
 # ========================================================================================
@@ -628,12 +655,26 @@ interface SessionContext {
   # powerboxRequest:
   #   rpcId: A unique string that should identify this rpc message to the app. You will receive this
   #          id in the callback to verify which message it is referring to.
-  #   query: A list of PowerboxDescriptor objects, serialized as a Javascript array OR a
-  #          base64-encoded powerbox query created using the `spk query` tool.
-  #   saveLabel: A string petname to give this label. This will be displayed to the user as the name
+  #   query: A list of PowerboxDescriptor objects, serialized as a Javascript array of
+  #          base64-encoded packed powerbox query descriptors created using the `spk query` tool.
+  #   saveLabel: A petname to give this label. This will be displayed to the user as the name
   #          for this capability.
   #
-  # (eg. window.parent.postMessage({powerboxRequest: {rpcId: myRpcId, query: [{}]}}, "*")
+  # e.g.:
+  #   window.parent.postMessage({
+  #     powerboxRequest: {
+  #       rpcId: myRpcId,
+  #       query: [
+  #         {
+  #           tags: [
+  #             // encoded/packed/base64url of (tags = [(id = 15831515641881813735)])
+  #             "EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA",
+  #           ],
+  #         },
+  #       ],
+  #       saveLabel: { defaultText: "Linked grain" },
+  #     },
+  #   }, "*");
   #
   # The postMessage searches for capabilities in the user's powerbox matching the given query and
   # displays a selection UI to the user.
@@ -645,12 +686,12 @@ interface SessionContext {
   #   }
   # }, false)
 
-  provide @4 (cap :Capability, requiredPermissions :PermissionSet,
+  fulfillRequest @4 (cap :Capability, requiredPermissions :PermissionSet,
               descriptor :PowerboxDescriptor, displayInfo :PowerboxDisplayInfo);
   # For sessions started with `newRequestSession()`, fulfills the original request. If only one
-  # capability was requested, the powerbox will close upon `provide()` being called. If multiple
-  # capabilities were requested, then the powerbox remains open and `provide()` may be called
-  # repeatedly.
+  # capability was requested, the powerbox will close upon `fulfillRequest()` being called. If
+  # multiple capabilities were requested, then the powerbox remains open and `fulfillRequest()` may
+  # be called repeatedly.
   #
   # If the session was not started with `newRequestSession()`, this method is equivalent to
   # `offer()`. This can be helpful when building a UI that can be used both embedded in the

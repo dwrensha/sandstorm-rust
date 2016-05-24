@@ -64,6 +64,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   post @1 (path :Text, content :PostContent, context :Context) -> Response;
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
+  patch @17 (path :Text, content :PostContent, context :Context) -> Response;
 
   postStreaming @5 (path :Text, mimeType :Text, context :Context, encoding :Text)
       -> (stream :RequestStream);
@@ -129,6 +130,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     eTagPrecondition :union {
       none @4 :Void;  # No precondition.
       exists @5 :Void;  # If-Match: *
+      doesntExist @8 :Void;  # If-None-Match: *
       matchesOneOf @6 :List(ETag);  # If-Match
       matchesNoneOf @7 :List(ETag);  # If-None-Match
     }
@@ -148,12 +150,14 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # purposes. This whitelist exists to help avoid the need to modify code originally written
       # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
       # to send us pull requests adding additional headers.
+      # Values in this list that end with '*' whitelist a prefix.
 
     #  "oc-total-length",       # Owncloud client
     #  "oc-chunk-size",         # Owncloud client
     #  "x-oc-mtime",            # Owncloud client
     #  "oc-fileid",             # Owncloud client
     #  "oc-chunked",            # Owncloud client
+    #  "x-hgarg-*",             # Mercurial client
     #];
   }
 
@@ -258,6 +262,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       requestUriTooLong     @8 $httpStatus(id = 414, title = "Request-URI Too Long");
       unsupportedMediaType  @9 $httpStatus(id = 415, title = "Unsupported Media Type");
       imATeapot            @10 $httpStatus(id = 418, title = "I'm a teapot");
+      unprocessableEntity  @12 $httpStatus(id = 422, title = "Unprocessable Entity");
 
       # Not applicable:
       #   401 Unauthorized:  We don't do HTTP authentication.
@@ -452,6 +457,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     davClass1 @0 :Bool = false;
     davClass2 @1 :Bool = false;
     davClass3 @2 :Bool = false;
+    davExtensions @3 :List(Text);
   }
 
   enum PropfindDepth {
