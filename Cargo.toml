@@ -3,6 +3,8 @@ name = "sandstorm"
 version = "0.1.0"
 authors = ["David Renshaw <david@sandstorm.io>"]
 license = "MIT"
+description = "Sandstorm Cap'n Proto interfaces"
+keywords = ["sandstorm"]
 build = "build.rs"
 
 [dependencies]
