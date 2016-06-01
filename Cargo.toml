@@ -1,9 +1,10 @@
 [package]
 name = "sandstorm"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["David Renshaw <david@sandstorm.io>"]
 license = "MIT"
 description = "Sandstorm Cap'n Proto interfaces"
+repository = "https://github.com/dwrensha/sandstorm-rust"
 keywords = ["sandstorm"]
 build = "build.rs"
 
