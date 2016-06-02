@@ -2,8 +2,10 @@ extern crate capnpc;
 
 fn main() {
     ::capnpc::compile("schema",
-                      &["schema/grain.capnp",
-                        "schema/util.capnp",
+                      &["schema/util.capnp",
+                        "schema/powerbox.capnp",
+                        "schema/app.capnp",
+                        "schema/grain.capnp",
 			            "schema/web-session.capnp",
                         "schema/ip.capnp",
                         "schema/email.capnp",
