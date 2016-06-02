@@ -30,10 +30,6 @@ pub mod powerbox_capnp {
   include!(concat!(env!("OUT_DIR"), "/powerbox_capnp.rs"));
 }
 
-pub mod app_capnp {
-  include!(concat!(env!("OUT_DIR"), "/app_capnp.rs"));
-}
-
 pub mod grain_capnp {
   include!(concat!(env!("OUT_DIR"), "/grain_capnp.rs"));
 }
