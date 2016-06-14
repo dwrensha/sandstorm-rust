@@ -81,12 +81,12 @@ interface SandstormApi(AppObjectId) {
   # it). You must use `SandstormApi.save()` so that saved capabilities can be inspected by the
   # user.)
 
-  restore @9 (token :Data) -> (cap :Capability);
+  restore @4 (token :Data) -> (cap :Capability);
   # Given a token previously returned by `save()`, get the capability it pointed to. The returned
   # capability should implement the same interfaces as the one you saved originally, so you can
   # downcast it as appropriate.
 
-  claimRequest @4 (requestToken :Text, requiredPermissions :PermissionSet) -> (cap :Capability);
+  claimRequest @9 (requestToken :Text, requiredPermissions :PermissionSet) -> (cap :Capability);
   # When a powerbox request is initiated client-side via the postMessage API and the user completes
   # the request flow, the Sandstorm shell responds to the requesting app with a token. This token
   # itself is not a SturdyRef, but can be exchanged server-side for a capability which in turn
@@ -110,14 +110,11 @@ interface SandstormApi(AppObjectId) {
   # inject the SturdyRef into a subsequent spoofed powerbox response, since a SturdyRef is not
   # usable as a `requestToken`.
   #
-  # Note that `requestToken` is actually text. It is declared as `Data` here for historical
-  # reasons, but the data should simply be the UTF-8-encoded text string returned in the
-  # client-side powerbox request. TODO(apibump): Change `requestToken` to Text.
-  #
   # `requiredPermissions` specifies permissions which must be held on *this* grain by the user
-  # who completed the powerbox interaction. This way, if a user of a grain connects the grain to
-  # other resources, but later has their access to the grain revoked, these connections are revoked
-  # as well.
+  # who completed the powerbox interaction. (The implicit "can access the grain at all" permission
+  # is always treated as a required permission, even if `requiredPermissions` is null or empty.)
+  # This way, if a user of a grain connects the grain to other resources, but later has their access
+  # to the grain revoked, these connections are revoked as well.
   #
   # Consider this example: Alice owns a grain which implements a discussion forum. At some point,
   # Alice invites Dave to participate in the forum, and she gives him moderator permissions. As
@@ -161,6 +158,29 @@ interface SandstormApi(AppObjectId) {
   # TODO(someday): We could make `handle` be persistent. If the app persists it -- and if
   #   `notification` is persistent -- we would automatically restart the app after an unexpected
   #   failure.
+}
+
+struct DenormalizedGrainMetadata @0xbdd9bea5585df6c5 {
+  # The metadata that we need to present contextual information for shared grains (in particular,
+  # information about the app providing that grain, like icon and title).
+
+  appTitle @0 :Util.LocalizedText;
+  # A copy of the app name for the corresponding UIView for presentation in the grain list.
+
+  union {
+    icon :group {
+      format @1 :Text;
+      # Icon asset format, if present.  One of "png" or "svg"
+
+      assetId @2 :Text;
+      # The asset ID associated with the grain-size icon for this token
+
+      assetId2xDpi @3 :Text;
+      # If present, the asset ID for the equivalent asset as assetId at twice-resolution
+    }
+    appId @4 :Text;
+    # App ID, needed to generate a favicon if no icon is provided.
+  }
 }
 
 interface UiView @0xdbb4d798ea67e2e7 {
@@ -277,14 +297,21 @@ interface UiView @0xdbb4d798ea67e2e7 {
     # is chosen by the user during a powerbox offer, then `newOfferSession()` will be called
     # to start a session around this.
 
-    appTitle @5 :Util.LocalizedText;
-
-    struct IconUrls {
-       url @0 :Text;
-       url2xDpi @1 :Text;
-    }
-
-    grainIconUrls @6 :IconUrls;
+    metadata @5: DenormalizedGrainMetadata;
+    # Title and icons for the app of which this grain is an instance.
+    #
+    # TODO(someday): Currently this field is automatically filled in by the Sandstorm frontend.
+    #   For grains to be able to fill in the asset IDs, we'll need to provide a way for them to
+    #   create static  assets, e.g.:
+    #
+    #     interface StaticAsset {
+    #         getId @0 () -> (assetId :Text);
+    #         getContent @1 () -> (mimeType :Text, data :Data);
+    #     }
+    #
+    #     SandstormApi {
+    #        createStaticAsset (mimeType :Text, content :Data) -> (asset :StaticAsset);
+    #     }
   }
 
   struct PowerboxTag {
@@ -491,7 +518,7 @@ interface SessionContext {
   request @3 (query :List(Powerbox.PowerboxDescriptor), requiredPermissions :PermissionSet)
           -> (cap :Capability, descriptor :Powerbox.PowerboxDescriptor);
   # Although this method exists, it is unimplemented and currently you are meant to use the
-  # postMessage api to get a token, and then restore that token with SandstormApi.restore().
+  # postMessage api to get a temporary token and then restore it with SandstormApi.claimRequest().
   #
   # The postMessage api is an rpc interface so you will have to listen for a `message` callback
   # after sending a postMessage. The postMessage object should have the following form:

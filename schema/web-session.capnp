@@ -48,6 +48,10 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # whenever possible.  Note that the URL can change from session to session and from user to
     # user, hence it is only valid for the current session.
 
+    staticAssetPath @3: Text;
+    # HTTP URL of the root path from which static assets are served. Prepend this to a static
+    # asset ID to get the full URL of a static asset.
+
     userAgent @1 :Text;
     acceptableLanguages @2 :List(Text);
     # Content of User-Agent and Accept-Language headers.  The platform will start a new session if
@@ -144,7 +148,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       value @1 :Text;
     }
 
-    # commented-out for now because capnpc-rust can't handle list constants.
+    # Commented out because capnproto-rust does not yet support list constants.
     #const headerWhitelist :List(Text) = [
       # Non-standard request headers which are whitelisted for backwards-compatibility
       # purposes. This whitelist exists to help avoid the need to modify code originally written
