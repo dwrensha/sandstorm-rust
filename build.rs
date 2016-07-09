@@ -4,6 +4,8 @@ fn main() {
     ::capnpc::compile("schema",
                       &["schema/util.capnp",
                         "schema/powerbox.capnp",
+                        "schema/identity.capnp",
+                        "schema/activity.capnp",
                         "schema/grain.capnp",
 			            "schema/web-session.capnp",
                         "schema/ip.capnp",

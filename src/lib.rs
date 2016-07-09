@@ -27,7 +27,15 @@ pub mod util_capnp {
 }
 
 pub mod powerbox_capnp {
-  include!(concat!(env!("OUT_DIR"), "/powerbox_capnp.rs"));
+    include!(concat!(env!("OUT_DIR"), "/powerbox_capnp.rs"));
+}
+
+pub mod identity_capnp {
+    include!(concat!(env!("OUT_DIR"), "/identity_capnp.rs"));
+}
+
+pub mod activity_capnp {
+    include!(concat!(env!("OUT_DIR"), "/activity_capnp.rs"));
 }
 
 pub mod grain_capnp {
