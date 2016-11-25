@@ -12,4 +12,4 @@ build = "build.rs"
 capnp = "0.7"
 
 [build-dependencies]
-capnpc = "0.7"
+capnpc = "^0.7.4"

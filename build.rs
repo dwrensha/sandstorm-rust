@@ -1,16 +1,17 @@
 extern crate capnpc;
 
 fn main() {
-    ::capnpc::compile("schema",
-                      &["schema/util.capnp",
-                        "schema/powerbox.capnp",
-                        "schema/identity.capnp",
-                        "schema/activity.capnp",
-                        "schema/grain.capnp",
-			            "schema/web-session.capnp",
-                        "schema/ip.capnp",
-                        "schema/email.capnp",
-                        "schema/web-publishing.capnp",
-                        "schema/sandstorm-http-bridge.capnp"]
-    ).expect("compiling");
+    ::capnpc::CompilerCommand::new()
+        .src_prefix("schema")
+        .file("schema/util.capnp")
+        .file("schema/powerbox.capnp")
+        .file("schema/identity.capnp")
+        .file("schema/activity.capnp")
+        .file("schema/grain.capnp")
+	    .file("schema/web-session.capnp")
+        .file("schema/ip.capnp")
+        .file("schema/email.capnp")
+        .file("schema/web-publishing.capnp")
+        .file("schema/sandstorm-http-bridge.capnp")
+        .run().expect("compiling");
 }
