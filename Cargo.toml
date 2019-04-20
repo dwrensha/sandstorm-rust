@@ -1,6 +1,6 @@
 [package]
 name = "sandstorm"
-version = "0.0.7"
+version = "0.0.8"
 authors = ["David Renshaw <david@sandstorm.io>"]
 license = "MIT"
 description = "Sandstorm Cap'n Proto interfaces"
