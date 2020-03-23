@@ -127,6 +127,9 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     accept @2 :List(AcceptedType);
     # This corresponds to the Accept header
 
+    acceptEncoding @9 :List(AcceptedEncoding);
+    # This corresponds to the Accept-Encoding header
+
     eTagPrecondition :union {
       none @4 :Void;  # No precondition.
       exists @5 :Void;  # If-Match: *
@@ -144,21 +147,24 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       value @1 :Text;
     }
 
-    # Commented out because capnproto-rust does not yet support list constants.
-    #const headerWhitelist :List(Text) = [
+    const headerWhitelist :List(Text) = [
       # Non-standard request headers which are whitelisted for backwards-compatibility
       # purposes. This whitelist exists to help avoid the need to modify code originally written
       # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
       # to send us pull requests adding additional headers.
       # Values in this list that end with '*' whitelist a prefix.
 
-    #  "oc-total-length",       # Owncloud client
-    #  "oc-chunk-size",         # Owncloud client
-    #  "x-oc-mtime",            # Owncloud client
-    #  "oc-fileid",             # Owncloud client
-    #  "oc-chunked",            # Owncloud client
-    #  "x-hgarg-*",             # Mercurial client
-    #];
+      "x-sandstorm-app-*",     # For new headers introduced by Sandstorm apps.
+
+      "oc-total-length",       # Owncloud client
+      "oc-chunk-size",         # Owncloud client
+      "x-oc-mtime",            # Owncloud client
+      "oc-fileid",             # Owncloud client
+      "oc-chunked",            # Owncloud client
+      "x-hgarg-*",             # Mercurial client
+      "x-phabricator-*",       # Phabricator
+      "x-requested-with",      # JQuery header used by Rails and other frameworks
+    ];
   }
 
   struct PostContent {
@@ -185,6 +191,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   }
 
   struct Cookie {
+    # Strings here must not contain ';' nor ','. Also, `name` cannot contain '='.
+
     name @0 :Text;
     value @1 :Text;
     expires :union {
@@ -205,6 +213,16 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # For example, the Accept header with value 'text/javascript; q=0.01' would have a mimeType of
     # "text/javascript" and a qValue of .01.
     mimeType @0 :Text;
+    qValue @1 :Float32 = 1;
+  }
+
+  struct AcceptedEncoding {
+    # The Accept-Encoding header contains a list of valid content codings.
+    # Each content coding could be "*", indicating an arbitrary encoding.
+    # Each content coding comes with a qValue, defaulting to 1.
+    # For example, gzip;q=0.5 indicates the "gzip" coding with qValue "0.5"
+
+    contentCoding @0 :Text;
     qValue @1 :Float32 = 1;
   }
 
@@ -298,6 +316,9 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
           stream @6 :Util.Handle;
           # Indicates that the content will be streamed to the `responseStream` offered in the
           # call's `Context`. The caller may cancel the stream by dropping the Handle.
+          #
+          # Note that to prevent a grain from being shut down in the middle of a large download,
+          # it is necessary to call ping() on this handle every 60 seconds.
         }
 
         disposition :union {
@@ -312,6 +333,10 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         shouldResetForm @15 :Bool;
         # If this is the response to a form submission, should the form be reset to empty?
         # Distinguishes between HTTP response 204 (False) and 205 (True)
+
+        eTag @19 :ETag;
+        # Optional entity tag header. Server can send this in a response to a modifying request
+        # to indicate for example the new version of the modified resource.
       }
 
       preconditionFailed :group {
@@ -357,6 +382,14 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
         descriptionHtml @8 :Text;
         # Optional extended description of the error, as an HTML document.
+        #
+        # If the response is not text/html, use nonHtmlContent.
+        #
+        # TODO(apibump): Get rid of this and use only nonHtmlContent.
+
+        nonHtmlBody @21 :ErrorBody;
+        # Response body, of a type that isn't text/html. If present, descriptionHtml should be
+        # ignored. However, older programs only know about descriptionHtml.
       }
 
       serverError :group {
@@ -367,11 +400,46 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
         descriptionHtml @9 :Text;
         # Optional extended description of the error, as an HTML document.
+        #
+        # TODO(apibump): Get rid of this and use only nonHtmlContent.
+
+        nonHtmlBody @22 :ErrorBody;
+        # Response body, of a type that isn't text/html. If present, descriptionHtml should be
+        # ignored. However, older programs only know about descriptionHtml.
       }
 
       # TODO(someday):  Return blob directly from storage, so data doesn't have to stream through
       #   the app?
     }
+
+    additionalHeaders @20 :List(Header);
+    # Additional headers present in the reponse. Only whitelisted headers are
+    # permitted.
+
+    struct Header {
+      name @0 :Text;  # lower-cased name
+      value @1 :Text;
+    }
+
+    struct ErrorBody {
+      data @0 :Data;
+      encoding @1 :Text;  # Content-Encoding header (optional).
+      language @2 :Text;  # Content-Language header (optional).
+      mimeType @3 :Text;  # Content-Type header.
+    }
+
+    const headerWhitelist :List(Text) = [
+      # Non-standard response headers which are whitelisted for backwards-compatibility
+      # purposes. This whitelist exists to help avoid the need to modify code originally written
+      # without Sandstorm in mind -- especially to avoid modifying client apps.
+      # Feel free to send us pull requests adding additional headers.
+      # Values in this list that end with '*' whitelist a prefix.
+
+      "x-sandstorm-app-*",     # For new headers introduced by Sandstorm apps.
+
+      "x-oc-mtime",            # Owncloud protocol
+    ];
+
   }
 
   interface RequestStream extends(Util.ByteStream) {
@@ -400,7 +468,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # In the future, this will be replaced with a `sendMessage()` method that sends one WebSocket
     # datagram at a time.
     #
-    # TODO(soon):  Send whole WebSocket datagrams.
+    # TODO(apibump): Send whole WebSocket messages.
   }
 
   struct CachePolicy {

@@ -9,7 +9,7 @@ keywords = ["sandstorm"]
 build = "build.rs"
 
 [dependencies]
-capnp = "0.11"
+capnp = "0.12"
 
 [build-dependencies]
-capnpc = "0.11"
+capnpc = "0.12"
