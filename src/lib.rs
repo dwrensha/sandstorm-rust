@@ -33,8 +33,12 @@ pub mod identity_capnp {
     include!(concat!(env!("OUT_DIR"), "/identity_capnp.rs"));
 }
 
+pub mod api_session_capnp {
+    include!(concat!(env!("OUT_DIR"), "/api_session_capnp.rs"));
+}
+
 pub mod activity_capnp {
-    include!(concat!(env!("OUT_DIR"), "/activity_capnp.rs"));
+  include!(concat!(env!("OUT_DIR"), "/activity_capnp.rs"));
 }
 
 pub mod grain_capnp {
