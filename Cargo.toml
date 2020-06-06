@@ -1,15 +1,16 @@
 [package]
 name = "sandstorm"
-version = "0.0.13"
+version = "0.0.14"
 authors = ["David Renshaw <dwrenshaw@gmail.com>"]
 license = "MIT"
 description = "Sandstorm Cap'n Proto interfaces"
 repository = "https://github.com/dwrensha/sandstorm-rust"
 keywords = ["sandstorm"]
 build = "build.rs"
+edition = "2018"
 
 [dependencies]
-capnp = "0.12"
+capnp = "0.13"
 
 [build-dependencies]
-capnpc = "0.12"
+capnpc = "0.13"
