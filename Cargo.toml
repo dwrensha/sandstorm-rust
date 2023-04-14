@@ -7,7 +7,7 @@ description = "Sandstorm Cap'n Proto interfaces"
 repository = "https://github.com/dwrensha/sandstorm-rust"
 keywords = ["sandstorm"]
 build = "build.rs"
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 capnp = "0.16"
