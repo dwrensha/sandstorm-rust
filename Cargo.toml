@@ -1,6 +1,6 @@
 [package]
 name = "sandstorm"
-version = "0.0.17"
+version = "0.0.18"
 authors = ["David Renshaw <dwrenshaw@gmail.com>"]
 license = "MIT"
 description = "Sandstorm Cap'n Proto interfaces"
@@ -10,7 +10,7 @@ build = "build.rs"
 edition = "2021"
 
 [dependencies]
-capnp = "0.16"
+capnp = "0.17"
 
 [build-dependencies]
-capnpc = "0.16"
+capnpc = "0.17"
