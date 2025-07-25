@@ -19,48 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-extern crate capnp;
-
-pub mod util_capnp {
-  include!(concat!(env!("OUT_DIR"), "/util_capnp.rs"));
-}
-
-pub mod powerbox_capnp {
-    include!(concat!(env!("OUT_DIR"), "/powerbox_capnp.rs"));
-}
-
-pub mod identity_capnp {
-    include!(concat!(env!("OUT_DIR"), "/identity_capnp.rs"));
-}
-
-pub mod api_session_capnp {
-    include!(concat!(env!("OUT_DIR"), "/api_session_capnp.rs"));
-}
-
-pub mod activity_capnp {
-  include!(concat!(env!("OUT_DIR"), "/activity_capnp.rs"));
-}
-
-pub mod grain_capnp {
-  include!(concat!(env!("OUT_DIR"), "/grain_capnp.rs"));
-}
-
-pub mod web_session_capnp {
-  include!(concat!(env!("OUT_DIR"), "/web_session_capnp.rs"));
-}
-
-pub mod ip_capnp {
-  include!(concat!(env!("OUT_DIR"), "/ip_capnp.rs"));
-}
-
-pub mod email_capnp {
-  include!(concat!(env!("OUT_DIR"), "/email_capnp.rs"));
-}
-
-pub mod web_publishing_capnp {
-  include!(concat!(env!("OUT_DIR"), "/web_publishing_capnp.rs"));
-}
-
-pub mod sandstorm_http_bridge_capnp {
-  include!(concat!(env!("OUT_DIR"), "/sandstorm_http_bridge_capnp.rs"));
-}
+capnp::generated_code!(pub mod util_capnp);
+capnp::generated_code!(pub mod powerbox_capnp);
+capnp::generated_code!(pub mod identity_capnp);
+capnp::generated_code!(pub mod api_session_capnp);
+capnp::generated_code!(pub mod activity_capnp);
+capnp::generated_code!(pub mod grain_capnp);
+capnp::generated_code!(pub mod web_session_capnp);
+capnp::generated_code!(pub mod ip_capnp);
+capnp::generated_code!(pub mod email_capnp);
+capnp::generated_code!(pub mod web_publishing_capnp);
+capnp::generated_code!(pub mod sandstorm_http_bridge_capnp);
